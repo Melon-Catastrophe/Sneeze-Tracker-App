@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Sneeze Tracker</string>
+    <string name="counter_title">Daily Sneezes</string>
+    <string name="num_sneezes">0</string>
+    <string name="add_sneeze_button">+</string>
+
+    <string name="sneezes_day">Sneezes Today:</string>
+    <string name="sneezes_week">Sneezes This Week:</string>
+    <string name="sneezes_month">Sneezes This Month:</string>
+</resources>
