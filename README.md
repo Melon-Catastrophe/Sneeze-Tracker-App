@@ -26,4 +26,5 @@ The most challenging part of this project was working with creating a file to st
 
 * If a sneeze counter for a particular date reaches zero, the app should remove that from the db.txt file.
 * Add more sneeze statistics (Average sneezes per day, number of sneezes per unit of time, etc.).
+* If necessary, add Scrolling View to the Sneeze Statistics activity in case user wants landscape view.
 * Clean up code and make it consistent.
