@@ -1,54 +1,55 @@
 package com.kiwi_melon.sneezetracker
 
-import android.app.Activity
 import android.content.Intent
-import androidx.appcompat.app.AppCompatActivity
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import java.io.File
 import java.io.InputStream
-import com.kiwi_melon.sneezetracker.MainActivity as MainActivity1
+import java.text.DateFormat
+import java.text.SimpleDateFormat
+import java.util.*
 
 class DisplaySneezeStats : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_display_sneeze_stats)
 
-        // Hide the status bar.
-        window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
-        // Remember that you should never show the action bar if the
-        // status bar is hidden, so hide that too if necessary.
-        actionBar?.hide()
+        // Hides the status/navigation bar(s)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            window.decorView.windowInsetsController!!.hide(
+                android.view.WindowInsets.Type.statusBars()
+                        or android.view.WindowInsets.Type.navigationBars()
+            )
+        } else { window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN }
 
-        val activity: Activity
-        val fileContents = readFile()
-
-
+        // Defines needed Views.
         val statBtn = findViewById<FloatingActionButton>(R.id.statButton)
         val sneezeWeekText = findViewById<TextView>(R.id.sneezes_month)
 
-        val monthList = getNumSneezeData("month", "06", "15", "2021")
+        // Gets a list of the sneezes in the current month, does math, and updates sneezeWeekText.
+        val monthList = getNumSneezeData("month",
+            getCurrentMonth(), getCurrentDay(), getCurrentYear())
         var numSneezesMonth = 0
         if (monthList != null) {
             for (i in monthList) {
                 numSneezesMonth += i
             }
         }
-
         sneezeWeekText.append(" $numSneezesMonth")
 
+        // Changes Activity to MainActivity on click.
         statBtn.setOnClickListener(View.OnClickListener {
-            val intent = Intent(this, MainActivity1::class.java).apply {}
+            val intent = Intent(this, MainActivity::class.java).apply {}
             startActivity(intent)
         })
-
-
     }
 
-
+    // Unfinished function.
     fun getAvgSneezeData(type: String, dataFind: String): String {
         val fileString = readFile()
 
@@ -79,22 +80,16 @@ class DisplaySneezeStats : AppCompatActivity() {
         return "test"
     }
 
-    fun getNumSneezeData(boundaryType: String, month: String, day: String, year: String): MutableList<Int>? {
+    // Returns a list of sneeze numbers given type of data requested and date.
+    // If type is not recognized, returns null.
+    private fun getNumSneezeData(boundaryType: String, month: String, day: String, year: String): MutableList<Int>? {
         val fileString = readFile()
         val fileMap = fileToMap()
         var listOfSneezeStats = mutableListOf<Int>()
 
         if (boundaryType == "month") {
-            val astIndex = fileString.indexOf('*')
-//            val dateString = fileString.subSequence(astIndex + 1, astIndex + 11)
-
-            var i = 0
             for ((key, value) in fileMap) {
                 if (key.startsWith(month.toString()) && key.endsWith(year.toString())) {
-
-//                    var sneezeIndex = fileString.indexOf(':', astIndex)
-//                    var endSneezeIndex = fileString.indexOf(';', sneezeIndex)
-//                    val numSneeze = fileString.subSequence(sneezeIndex + 1, endSneezeIndex).toString()
                     listOfSneezeStats.add(value)
                 }
             }
@@ -158,6 +153,24 @@ class DisplaySneezeStats : AppCompatActivity() {
             }
             return file_map
         }
+    }
+
+    private fun getCurrentMonth(): String {
+        val dateFormat: DateFormat = SimpleDateFormat("MM")
+        val date = Date()
+        return dateFormat.format(date)
+    }
+
+    private fun getCurrentDay(): String {
+        val dateFormat: DateFormat = SimpleDateFormat("dd")
+        val date = Date()
+        return dateFormat.format(date)
+    }
+
+    private fun getCurrentYear(): String {
+        val dateFormat: DateFormat = SimpleDateFormat("yyyy")
+        val date = Date()
+        return dateFormat.format(date)
     }
 }
 

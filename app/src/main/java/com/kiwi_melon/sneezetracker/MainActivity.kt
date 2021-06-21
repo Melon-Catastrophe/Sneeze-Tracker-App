@@ -6,6 +6,7 @@ import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.view.WindowInsetsController
 import android.widget.Button
 import android.widget.CalendarView
 import android.widget.CalendarView.OnDateChangeListener
@@ -24,6 +25,9 @@ import java.util.*
 class MainActivity : AppCompatActivity() {
     lateinit var binding: ActivityMainBinding
 
+    // TODO: Perhaps make it so that it always uses mutablemap, and mutablemap is always changed
+    //  using fileToMap() when the file changes. Otherwise, what purpose does mutablemap have?
+
     // Date Format: *01.18.2020:3;  DO NOT CHANGE!
     // Note for when "db.txt" is empty:
         // ALWAYS use fout variable for FileOutputStream
@@ -31,46 +35,42 @@ class MainActivity : AppCompatActivity() {
 
     var dateGlobal: String = "0"
 
-    @RequiresApi(Build.VERSION_CODES.KITKAT)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Hide the status bar.
-        window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
-        // Remember that you should never show the action bar if the
-        // status bar is hidden, so hide that too if necessary.
-        actionBar?.hide()
+        // Hides the status/navigation bar(s)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            window.decorView.windowInsetsController!!.hide(
+                android.view.WindowInsets.Type.statusBars()
+                        or android.view.WindowInsets.Type.navigationBars()
+            )
+        } else { window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN }
 
+        // Declaring needed Views.
 //        val btnView = findViewById<Button>(R.id.btn_view)
         val addBtn = findViewById<Button>(R.id.add_button)
         val minusBtn = findViewById<Button>(R.id.minus_button)
         val statBtn = findViewById<FloatingActionButton>(R.id.statButton)
         val calView = findViewById<CalendarView>(R.id.calendarView)
-        val counter_title = findViewById<TextView>(R.id.counter_title)
         val counter_text = findViewById<TextView>(R.id.counter)
 
-        val file: File = File(filesDir.toString() + "db.txt")
+        // Below is used for debugging.
 //        var fout = FileOutputStream(file)  //This works.
 //        fout.write(("*06.15.2021:4;*06.17.2021:2;").toByteArray())
 //        fout.close()
-        /* If the above does not work at any time, simply close the app, then open again, and see
-        anything has changed. It might be because I am not closing the file streams. */
 
-        var today = getCurrentDate()
-        var dates = fileToMap()
-        if (dates.get(today) != null) {
-            counter_text.text = dates.get(today).toString()
-        } else { counter_text.text = "0" }
-
-
+        // All Listeners are below.
         calView.setOnDateChangeListener(OnDateChangeListener { view, year, month, dayOfMonth ->
+            // Defines and passes the date of the currently selected day on the calendar to
+            // a global variable so it can be passed to other functions.
             var monthStr = (month + 1).toString().padStart(2, '0')
             var dayOfMonthStr = dayOfMonth.toString().padStart(2, '0')
             val date: String = "$monthStr.$dayOfMonthStr.$year"
             setGlobalDate(date)
 
+            // Sets the counter text to an appropriate value.
             if (findSneezefromFile(dateGlobal) == "-1") {
                 counter_text.text = "0"
             } else {
@@ -80,10 +80,10 @@ class MainActivity : AppCompatActivity() {
 
         addBtn.setOnClickListener(View.OnClickListener {
             val today = getCurrentDate()
-            if (dateGlobal == "0") {
+            if (dateGlobal == "0") { // TODO: doesn't this only occur on app start? It is date otherwise.
                 addSneeze(today)
             } else {
-                addSneeze(dateGlobal)
+                addSneeze(dateGlobal)   // Adds a sneeze for the currently selected calendar day.
             } })
 
         minusBtn.setOnClickListener(View.OnClickListener {
@@ -95,10 +95,12 @@ class MainActivity : AppCompatActivity() {
             } })
 
         statBtn.setOnClickListener(View.OnClickListener {
+            // On click, changes activity.
             val intent = Intent(this, DisplaySneezeStats::class.java).apply {}
             startActivity(intent)
         })
 
+        // Button sometimes used for debugging.
 //        btnView.setOnClickListener(View.OnClickListener {
 //            counter_title.text = readFile()
 //        })
@@ -120,7 +122,6 @@ class MainActivity : AppCompatActivity() {
         /* Since the user can change the selectedDate at any time, current_sneezes must read from
         the file instead of from counter_text. */
         // We also must check for null in case the selectedDate is not in the file.
-        // var current_sneezes = (counter_text.text as String).toInt()
         var current_sneezes = findSneezefromFile(selectedDate)
         var new_sneezes = 0
         if (current_sneezes == "-1") {
@@ -144,7 +145,6 @@ class MainActivity : AppCompatActivity() {
             // Adds 1 the the value for the key of 'selectedDate' to the Mutable Map
 
         }
-        //TODO: make it so that it only adds to the mutablemap when it also updates the file.
         writeToFile(selectedDate, new_sneezes)
         Log.i("addSneeze readFile()", readFile())
         Log.i("addSneeze mutableMap", dates.toString())
@@ -181,6 +181,7 @@ class MainActivity : AppCompatActivity() {
         Log.i("removeSneeze mutableMap", dates.toString())
     }
 
+    // Reads the file text and returns it as a string.
     fun readFile(): String {
         val file: File = File(filesDir.toString() + "db.txt")
         val inputStream: InputStream = file.inputStream()
@@ -189,6 +190,7 @@ class MainActivity : AppCompatActivity() {
         return inpStr
     }
 
+    // Converts the data file to a MutableMap.
     private fun fileToMap(): MutableMap<String, Int> {
         val file_contents = readFile()
         var date_x = ""
@@ -236,10 +238,12 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // Returns either the number of sneezes for a given day or null if date or number does not exist.
     private fun findSneezefromMap(fileMap: MutableMap<String, Int>, date: String): Int? {
         return fileMap.get(date)
     }
 
+    // Returns number of sneezes for a given day as a String.
     private fun findSneezefromFile(date: String): String {
         val fileString = readFile()
         val dateIndex = fileString.indexOf(date)
@@ -262,6 +266,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // Given a day, will overwrite the number of sneezes the date currently contains.
     private fun writeToFile(day: String, writeNumSneezes: Int) {
         var fileString = ""
         fileString = readFile()
@@ -275,16 +280,16 @@ class MainActivity : AppCompatActivity() {
         var fout = FileOutputStream(file)
         fout.write((fileString).toByteArray())
         fout.close()
-
-        // TODO: Make this function change the sneeze number in file next to date. Maybe try copying readFile?
     }
 
+    // Returns the current date in a specific format.
     fun getCurrentDate(): String {
         val date = Calendar.getInstance().time
         val dateFormat = SimpleDateFormat("MM.dd.yyyy")
         return dateFormat.format(date)
     }
 
+    // Sets a global variable to be passed between functions.
     fun setGlobalDate(date: String) {
         dateGlobal = date
     }
